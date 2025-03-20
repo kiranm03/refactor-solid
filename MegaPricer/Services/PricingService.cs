@@ -5,11 +5,12 @@ using Microsoft.Data.Sqlite;
 
 namespace MegaPricer.Services;
 
+public record struct PriceRequest(int KitchenId, int WallOrderNum, string UserName, string RefType);
 public class PricingService
 {
-  public string CalculatePrice(int kitchenId, int wallOrderNum, string userName, string refType)
+  public string CalculatePrice(PriceRequest request)
   {
-    if (Context.Session[userName]["PricingOff"] == "Y") return "0|0|0";
+    if (Context.Session[request.UserName]["PricingOff"] == "Y") return "0|0|0";
 
     Kitchen kitchen = new Kitchen();
     Order order = new Order();
@@ -43,27 +44,27 @@ public class PricingService
     DataTable dt3 = new DataTable();
     StreamWriter sr = null;
 
-    Context.Session[userName]["WallWeight"] = 0;
+    Context.Session[request.UserName]["WallWeight"] = 0;
 
     try
     {
-      if (wallOrderNum == 0)
+      if (request.WallOrderNum == 0)
       {
         return "Session expired: Log in again.";
       }
-      if (kitchenId <= 0)
+      if (request.KitchenId <= 0)
       {
         return "invalid kitchenId";
       }
-      kitchen.GetCustomerKitchen(kitchenId, userName);
+      kitchen.GetCustomerKitchen(request.KitchenId, request.UserName);
       bbHeight = kitchen.BaseHeight;
       bbDepth = kitchen.BaseDepth;
       using (var conn = new SqliteConnection(ConfigurationSettings.ConnectionString))
       {
         var cmd = conn.CreateCommand();
         cmd.CommandText = "SELECT * FROM Walls WHERE KitchenId = @kitchenId AND WallOrder = @wallOrderNum";
-        cmd.Parameters.AddWithValue("@kitchenId", kitchenId);
-        cmd.Parameters.AddWithValue("@wallOrderNum", wallOrderNum);
+        cmd.Parameters.AddWithValue("@kitchenId", request.KitchenId);
+        cmd.Parameters.AddWithValue("@wallOrderNum", request.WallOrderNum);
         conn.Open();
         using (SqliteDataReader dr = cmd.ExecuteReader())
         {
@@ -83,7 +84,7 @@ public class PricingService
         return "invalid wallOrderNum";
       }
 
-      if (refType == "PriceReport")
+      if (request.RefType == "PriceReport")
       {
         // Start writing to the report file
         string baseDirectory = AppContext.BaseDirectory;
@@ -93,10 +94,10 @@ public class PricingService
         sr.WriteLine("");
         sr.WriteLine("Part Name,Part SKU,Height,Width,Depth,Color,Sq Ft $, Lin Ft $,Per Piece $,# Needed,Part Price,Add On %,Total Part Price");
       }
-      else if (refType == "Order")
+      else if (request.RefType == "Order")
       {
         // create a new order
-        order.KitchenId = kitchenId;
+        order.KitchenId = request.KitchenId;
         using (var conn = new SqliteConnection(ConfigurationSettings.ConnectionString))
         {
           var cmd = conn.CreateCommand();
@@ -189,7 +190,7 @@ public class PricingService
           {
             var cmd = conn.CreateCommand();
             cmd.CommandText = "SELECT * FROM UserMarkups WHERE UserName = @userName";
-            cmd.Parameters.AddWithValue("@userName", userName);
+            cmd.Parameters.AddWithValue("@userName", request.UserName);
             conn.Open();
             using (SqliteDataReader dr = cmd.ExecuteReader())
             {
@@ -202,7 +203,7 @@ public class PricingService
           subtotalPlus = thisTotalPartCost * (1 + thisUserMarkup / 100);
         }
 
-        if (refType == "Order")
+        if (request.RefType == "Order")
         {
           // add this part to the order
           using (var conn = new SqliteConnection(ConfigurationSettings.ConnectionString))
@@ -219,7 +220,7 @@ public class PricingService
             cmd.ExecuteNonQuery();
           }
         }
-        else if (refType == "PriceReport")
+        else if (request.RefType == "PriceReport")
         {
           // write out required part(s) to the report file
           sr.WriteLine($"{thisPartSku},{thisPartHeight},{thisPartWidth},{thisPartDepth},{thisPartColorName},{thisColorSquareFoot},{thisLinearFootCost},{thisPartCost},{thisPartQty},{thisPartCost * thisPartQty},{thisColorMarkup},{GlobalHelpers.Format(thisTotalPartCost)}");
@@ -289,7 +290,7 @@ public class PricingService
                   subtotalPlus += thisTotalFeatureCost * (1 + thisUserMarkup / 100);
                 }
               }
-              if (refType == "Order")
+              if (request.RefType == "Order")
               {
                 // add this part to the order
                 using (var conn2 = new SqliteConnection(ConfigurationSettings.ConnectionString))
@@ -307,7 +308,7 @@ public class PricingService
                 }
 
               }
-              else if (refType == "PriceReport")
+              else if (request.RefType == "PriceReport")
               {
                 // write out required part(s) to the report file
                 sr.WriteLine($"{featureSKU},{featureHeight},{featureWidth},{featureColorName},{thisColorSquareFoot},{thisLinearFootCost},{wholesalePrice},{quantity},{wholesalePrice * quantity},{thisColorMarkup},{GlobalHelpers.Format(thisTotalFeatureCost)}");
@@ -350,7 +351,7 @@ public class PricingService
               }
             }
           }
-          if (refType == "Order")
+          if (request.RefType == "Order")
           {
             // add this part to the order
             using (var conn = new SqliteConnection(ConfigurationSettings.ConnectionString))
@@ -368,7 +369,7 @@ public class PricingService
             }
 
           }
-          else if (refType == "PriceReport")
+          else if (request.RefType == "PriceReport")
           {
             // write out required part(s) to the report file
             sr.WriteLine($"{thisPartSku},{remainingWallHeight},{width},{thisPartColorName},{thisColorSquareFoot},{thisLinearFootCost},{thisPartCost},{thisPartQty},{thisPartCost * thisPartQty},{thisColorMarkup},{GlobalHelpers.Format(thisTotalPartCost)}");

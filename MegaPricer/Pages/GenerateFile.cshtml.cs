@@ -32,6 +32,6 @@ public class GenerateFileModel : PageModel
     }
 
     string userName = User.Identity.Name;
-    new PricingService().CalculatePrice(1, 1, userName, "PriceReport");
+    new PricingService().CalculatePrice(new PriceRequest(1, 1, userName, "PriceReport"));
   }
 }
