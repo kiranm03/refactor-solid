@@ -25,12 +25,12 @@ public class PricingService
     decimal subtotal = 0;
     decimal subtotalFlat = 0;
     decimal subtotalPlus = 0;
-    float grandtotal = 0;
-    float grandtotalFlat = 0;
+    decimal grandtotal = 0;
+    decimal grandtotalFlat = 0;
     float thisPartWidth = 0;
     float thisPartDepth = 0;
     float thisPartHeight = 0;
-    float thisPartCost = 0;
+    decimal thisPartCost = 0;
     float thisSectionWidth = 0;
     string thisPartSku = "";
     float bbHeight = 0;
@@ -38,12 +38,12 @@ public class PricingService
     int defaultColor = 0;
     int thisPartColor = 0;
     string thisPartColorName = "";
-    float thisColorMarkup = 0;
+    decimal thisColorMarkup = 0;
     float thisColorSquareFoot = 0;
-    float thisLinearFootCost = 0;
-    float thisUserMarkup = 0;
+    decimal thisLinearFootCost = 0;
+    decimal thisUserMarkup = 0;
     int thisPartQty = 0;
-    float thisTotalPartCost = 0;
+    decimal thisTotalPartCost = 0;
     bool isIsland = false;
     int wallId = 0;
     float wallHeight = 0;
@@ -170,7 +170,7 @@ public class PricingService
             {
               if (dr.HasRows && dr.Read())
               {
-                thisPartCost = dr.GetFloat("WholesalePrice");
+                thisPartCost = dr.GetDecimal("WholesalePrice");
               }
             }
           }
@@ -185,7 +185,7 @@ public class PricingService
               if (dr.HasRows && dr.Read())
               {
                 thisPartColorName = dr.GetString("Name");
-                thisColorMarkup = dr.GetFloat("PercentMarkup");
+                thisColorMarkup = dr.GetDecimal("PercentMarkup");
                 thisColorSquareFoot = dr.GetFloat("ColorPerSquareFoot");
               }
             }
@@ -204,7 +204,7 @@ public class PricingService
             {
               if (dr.HasRows && dr.Read())
               {
-                thisUserMarkup = dr.GetFloat("MarkupPercent");
+                thisUserMarkup = dr.GetDecimal("MarkupPercent");
               }
             }
           }
@@ -266,10 +266,10 @@ public class PricingService
             int quantity = Convert.ToInt32(featureRow["Quantity"]);
             float featureHeight = Convert.ToSingle(featureRow["Height"]);
             float featureWidth = Convert.ToSingle(featureRow["Width"]);
-            float featureCost = 0;
-            float thisTotalFeatureCost = 0;
+            decimal featureCost = 0;
+            decimal thisTotalFeatureCost = 0;
             string featureColorName = "";
-            float wholesalePrice = 0;
+            decimal wholesalePrice = 0;
 
             if (colorId > 0)
             {
@@ -284,10 +284,10 @@ public class PricingService
                   featureColorName = dr.GetString("Name");
                   float colorMarkup = dr.GetFloat("PercentMarkup");
                   thisColorSquareFoot = dr.GetFloat("ColorPerSquareFoot");
-                  wholesalePrice = dr.GetFloat("WholesalePrice");
+                  wholesalePrice = dr.GetDecimal("WholesalePrice");
 
                   float areaInSf = featureHeight * featureWidth / 144;
-                  featureCost = areaInSf * thisColorSquareFoot;
+                  featureCost = (decimal)(areaInSf * thisColorSquareFoot);
                   if (featureCost == 0)
                   {
                     featureCost = quantity * wholesalePrice;
@@ -348,10 +348,10 @@ public class PricingService
               {
                 thisPartSku = "PAINT";
                 thisPartColorName = dr.GetString("Name");
-                thisColorMarkup = dr.GetFloat("PercentMarkup");
+                thisColorMarkup = dr.GetDecimal("PercentMarkup");
                 thisColorSquareFoot = dr.GetFloat("ColorPerSquareFoot");
 
-                thisPartCost = area * thisColorSquareFoot / 144;
+                thisPartCost = (decimal)(area * thisColorSquareFoot / 144);
                 thisTotalPartCost = thisPartCost * (1 + thisColorMarkup / 100);
                 subtotal += thisTotalPartCost;
                 subtotalFlat += thisPartCost;
