@@ -6,17 +6,25 @@ using Microsoft.Data.Sqlite;
 namespace MegaPricer.Services;
 
 public record struct PriceRequest(int KitchenId, int WallOrderNum, string UserName, string RefType);
+
+public record PriceGroup(decimal Subtotal, decimal SubtotalFlat, decimal SubtotalPlus)
+{
+  public override string ToString()
+  {
+    return $"{Subtotal:C2}|{SubtotalFlat:C2}|{SubtotalPlus:C2}";
+  }
+}
 public class PricingService
 {
-  public string CalculatePrice(PriceRequest request)
+  public PriceGroup CalculatePrice(PriceRequest request)
   {
-    if (Context.Session[request.UserName]["PricingOff"] == "Y") return "0|0|0";
+    if (Context.Session[request.UserName]["PricingOff"] == "Y") return new PriceGroup(0, 0, 0);
 
     Kitchen kitchen = new Kitchen();
     Order order = new Order();
-    float subtotal = 0;
-    float subtotalFlat = 0;
-    float subtotalPlus = 0;
+    decimal subtotal = 0;
+    decimal subtotalFlat = 0;
+    decimal subtotalPlus = 0;
     float grandtotal = 0;
     float grandtotalFlat = 0;
     float thisPartWidth = 0;
@@ -376,9 +384,8 @@ public class PricingService
           }
         }
       }
-
-
-      return String.Format("{0:C2}|{1:C2}|{2:C2}", subtotal, subtotalFlat, subtotalPlus);
+      
+      return new PriceGroup(subtotal, subtotalFlat, subtotalPlus);
     }
     catch (Exception ex)
     {
