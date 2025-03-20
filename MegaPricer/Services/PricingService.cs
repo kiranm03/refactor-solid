@@ -1,5 +1,6 @@
 ﻿
 using System.Data;
+using Ardalis.Result;
 using MegaPricer.Data;
 using Microsoft.Data.Sqlite;
 
@@ -16,7 +17,7 @@ public record PriceGroup(decimal Subtotal, decimal SubtotalFlat, decimal Subtota
 }
 public class PricingService
 {
-  public PriceGroup CalculatePrice(PriceRequest request)
+  public Result<PriceGroup> CalculatePrice(PriceRequest request)
   {
     if (Context.Session[request.UserName]["PricingOff"] == "Y") return new PriceGroup(0, 0, 0);
 
@@ -58,11 +59,11 @@ public class PricingService
     {
       if (request.WallOrderNum == 0)
       {
-        return "Session expired: Log in again.";
+        return Result.Forbidden();
       }
       if (request.KitchenId <= 0)
       {
-        return "invalid kitchenId";
+        return Result.Invalid(new ValidationError("invalid kitchenId"));
       }
       kitchen.GetCustomerKitchen(request.KitchenId, request.UserName);
       bbHeight = kitchen.BaseHeight;
@@ -89,7 +90,7 @@ public class PricingService
 
       if (dt.Rows.Count == 0)
       {
-        return "invalid wallOrderNum";
+        return Result.Invalid(new ValidationError("invalid wallOrderNum"));
       }
 
       if (request.RefType == "PriceReport")
