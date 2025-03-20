@@ -26,8 +26,6 @@ public class PricingService
     decimal subtotal = 0;
     decimal subtotalFlat = 0;
     decimal subtotalPlus = 0;
-    decimal grandtotal = 0;
-    decimal grandtotalFlat = 0;
     float thisPartWidth = 0;
     float thisPartDepth = 0;
     float thisPartHeight = 0;
