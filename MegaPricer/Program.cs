@@ -25,6 +25,8 @@ builder.Services.AddScoped<IPriceCalculationStrategy, DefaultPriceCalculationStr
 builder.Services.AddScoped<OrderPriceCalculationStrategy>();
 builder.Services.AddScoped<PriceReportPriceCalculationStrategy>();
 
+builder.Services.AddScoped<IUserMarkup, SqliteUserMarkup>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -5,7 +5,7 @@ using Microsoft.Data.Sqlite;
 
 namespace MegaPricer.Services;
 
-public class PricingService() : IPricingService
+public class PricingService(IUserMarkup userMarkup) : IPricingService
 {
   public Result<PriceGroup> CalculatePrice(PriceRequest priceRequest, IPriceCalculationStrategy priceCalculationStrategy)
   {
@@ -82,7 +82,7 @@ public class PricingService() : IPricingService
           subtotal.Value += thisPart.MarkedUpCost;
           subtotal.Flat += thisPart.Cost;
 
-          thisUserMarkup = GetUserMarkup(priceRequest, thisUserMarkup);
+          thisUserMarkup = userMarkup.GetUserMarkup(priceRequest.userName);
           subtotal.Plus += thisPart.MarkedUpCost * (1 + thisUserMarkup / 100);
         }
         
@@ -232,27 +232,6 @@ public class PricingService() : IPricingService
     return dt3;
   }
 
-
-  private static decimal GetUserMarkup(PriceRequest priceRequest, decimal thisUserMarkup)
-  {
-    using (var conn = new SqliteConnection(ConfigurationSettings.ConnectionString))
-    {
-      var cmd = conn.CreateCommand();
-      cmd.CommandText = "SELECT * FROM UserMarkups WHERE UserName = @userName";
-      cmd.Parameters.AddWithValue("@userName", priceRequest.userName);
-      conn.Open();
-      using (SqliteDataReader dr = cmd.ExecuteReader())
-      {
-        if (dr.HasRows && dr.Read())
-        {
-          thisUserMarkup = dr.GetDecimal("MarkupPercent");
-        }
-      }
-    }
-
-    return thisUserMarkup;
-  }
-
   private static Part GetCostForColorChoice(Part thisPart)
   {
     using (var conn = new SqliteConnection(ConfigurationSettings.ConnectionString))
@@ -340,5 +319,33 @@ public class PricingService() : IPricingService
     }
 
     return dt;
+  }
+}
+
+public interface IUserMarkup
+{
+  decimal GetUserMarkup(string userName);
+}
+
+public class SqliteUserMarkup : IUserMarkup
+{
+  public decimal GetUserMarkup(string userName)
+  {
+    decimal userMarkup = 0;
+    using (var conn = new SqliteConnection(ConfigurationSettings.ConnectionString))
+    {
+      var cmd = conn.CreateCommand();
+      cmd.CommandText = "SELECT * FROM UserMarkups WHERE UserName = @userName";
+      cmd.Parameters.AddWithValue("@userName", userName);
+      conn.Open();
+      using (SqliteDataReader dr = cmd.ExecuteReader())
+      {
+        if (dr.HasRows && dr.Read())
+        {
+          userMarkup = dr.GetDecimal("MarkupPercent");
+        }
+      }
+    }
+    return userMarkup;
   }
 }
