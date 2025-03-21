@@ -5,7 +5,7 @@ using Microsoft.Data.Sqlite;
 
 namespace MegaPricer.Services;
 
-public class PricingService(IOrderDataService orderDataService) : IPricingService
+public class PricingService() : IPricingService
 {
   public Result<PriceGroup> CalculatePrice(PriceRequest priceRequest, IPriceCalculationStrategy priceCalculationStrategy)
   {

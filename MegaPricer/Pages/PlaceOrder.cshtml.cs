@@ -36,6 +36,6 @@ public class PlaceOrderModel : PageModel
     }
 
     string userName = User.Identity.Name;
-    _pricingService.CalculatePrice( new PriceRequest(1, 1, userName, "Order"), _orderPriceCalculationStrategy);
+    _pricingService.CalculatePrice( new PriceRequest(1, 1, userName), _orderPriceCalculationStrategy);
   }
 }
