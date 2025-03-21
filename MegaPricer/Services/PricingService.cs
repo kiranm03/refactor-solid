@@ -5,9 +5,52 @@ using Microsoft.Data.Sqlite;
 
 namespace MegaPricer.Services;
 
+public interface IPriceCalculationStrategy
+{
+  void Create(Kitchen kitchen);
+}
+public class PriceReportPriceCalculationStrategy : IPriceCalculationStrategy, IDisposable
+{
+  private StreamWriter _streamWriter;
+  public void Create(Kitchen kitchen)
+  {
+    // Start writing to the report file
+    string baseDirectory = AppContext.BaseDirectory;
+    string path = baseDirectory + "Orders.csv";
+    _streamWriter = new StreamWriter(path);
+    _streamWriter.WriteLine($"{kitchen.Name} ({kitchen.KitchenId}) - Run time: {DateTime.Now.ToLongTimeString()} ");
+    _streamWriter.WriteLine("");
+    _streamWriter.WriteLine("Part Name,Part SKU,Height,Width,Depth,Color,Sq Ft $, Lin Ft $,Per Piece $,# Needed,Part Price,Add On %,Total Part Price");
+  }
+
+  public void Dispose()
+  {
+    if(_streamWriter != null)
+    {
+      _streamWriter.Close();
+      _streamWriter.Dispose();
+    }
+  }
+}
+public class OrderPriceCalculationStrategy(IOrderDataService orderDataService) : IPriceCalculationStrategy
+{
+  public void Create(Kitchen kitchen)
+  {
+    // create a new order
+    var order = new Order { KitchenId = kitchen.KitchenId };
+    orderDataService.CreateNewOrder(order);
+  }
+}
+public class DefaultPriceCalculationStrategy : IPriceCalculationStrategy
+{
+  public void Create(Kitchen kitchen)
+  {
+    // do nothing
+  }
+}
 public class PricingService(IOrderDataService orderDataService) : IPricingService
 {
-  public Result<PriceGroup> CalculatePrice(PriceRequest priceRequest)
+  public Result<PriceGroup> CalculatePrice(PriceRequest priceRequest, IPriceCalculationStrategy priceCalculationStrategy)
   {
     if (Context.Session[priceRequest.userName]["PricingOff"] == "Y") return new PriceGroup(0, 0, 0);
 
@@ -51,23 +94,8 @@ public class PricingService(IOrderDataService orderDataService) : IPricingServic
       {
         return Result.Invalid(new ValidationError("invalid WallOrderNum"));
       }
-
-      if (priceRequest.refType == "PriceReport")
-      {
-        // Start writing to the report file
-        string baseDirectory = AppContext.BaseDirectory;
-        string path = baseDirectory + "Orders.csv";
-        sr = new StreamWriter(path);
-        sr.WriteLine($"{kitchen.Name} ({kitchen.KitchenId}) - Run time: {DateTime.Now.ToLongTimeString()} ");
-        sr.WriteLine("");
-        sr.WriteLine("Part Name,Part SKU,Height,Width,Depth,Color,Sq Ft $, Lin Ft $,Per Piece $,# Needed,Part Price,Add On %,Total Part Price");
-      }
-      else if (priceRequest.refType == "Order")
-      {
-        // create a new order
-        order.KitchenId = priceRequest.kitchenId;
-        orderDataService.CreateNewOrder(order);
-      }
+      
+      priceCalculationStrategy.Create(kitchen);
 
       defaultColor = Convert.ToInt32(dt.Rows[0]["CabinetColor"]);// dt.Rows[0].Field<int>("CabinetColor");
       wallId = Convert.ToInt32(dt.Rows[0]["WallId"]);

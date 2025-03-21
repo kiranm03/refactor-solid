@@ -21,6 +21,10 @@ builder.Services.AddRazorPages(options =>
 builder.Services.AddScoped<IOrderDataService, SqliteOrderDataService>();
 builder.Services.AddScoped<IPricingService, PricingService>();
 
+builder.Services.AddScoped<IPriceCalculationStrategy, DefaultPriceCalculationStrategy>();
+builder.Services.AddScoped<OrderPriceCalculationStrategy>();
+builder.Services.AddScoped<PriceReportPriceCalculationStrategy>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

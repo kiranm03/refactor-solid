@@ -8,11 +8,13 @@ public class GenerateFileModel : PageModel
 {
   private readonly ILogger<GenerateFileModel> _logger;
   private readonly IPricingService _pricingService;
+  private readonly PriceReportPriceCalculationStrategy _priceReportPriceCalculationStrategy;
 
-  public GenerateFileModel(ILogger<GenerateFileModel> logger, IPricingService pricingService)
+  public GenerateFileModel(ILogger<GenerateFileModel> logger, IPricingService pricingService, PriceReportPriceCalculationStrategy priceReportPriceCalculationStrategy)
   {
     _logger = logger;
     _pricingService = pricingService;
+    _priceReportPriceCalculationStrategy = priceReportPriceCalculationStrategy;
   }
 
   public void OnGet()
@@ -34,6 +36,6 @@ public class GenerateFileModel : PageModel
     }
 
     string userName = User.Identity.Name;
-    _pricingService.CalculatePrice(new PriceRequest(1, 1, userName, "PriceReport"));
+    _pricingService.CalculatePrice(new PriceRequest(1, 1, userName, "PriceReport"), _priceReportPriceCalculationStrategy);
   }
 }

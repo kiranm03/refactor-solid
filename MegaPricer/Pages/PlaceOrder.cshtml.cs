@@ -8,11 +8,13 @@ public class PlaceOrderModel : PageModel
 {
   private readonly ILogger<PlaceOrderModel> _logger;
   private readonly IPricingService _pricingService;
+  private readonly OrderPriceCalculationStrategy _orderPriceCalculationStrategy;
 
-  public PlaceOrderModel(ILogger<PlaceOrderModel> logger, IPricingService pricingService)
+  public PlaceOrderModel(ILogger<PlaceOrderModel> logger, IPricingService pricingService, OrderPriceCalculationStrategy orderPriceCalculationStrategy)
   {
     _logger = logger;
     _pricingService = pricingService;
+    _orderPriceCalculationStrategy = orderPriceCalculationStrategy;
   }
 
   public void OnGet()
@@ -34,6 +36,6 @@ public class PlaceOrderModel : PageModel
     }
 
     string userName = User.Identity.Name;
-    _pricingService.CalculatePrice( new PriceRequest(1, 1, userName, "Order"));
+    _pricingService.CalculatePrice( new PriceRequest(1, 1, userName, "Order"), _orderPriceCalculationStrategy);
   }
 }
