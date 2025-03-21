@@ -10,6 +10,7 @@ public interface IPriceCalculationStrategy
   void Create(Kitchen kitchen);
   void AddPart(Part part, decimal userMarkup);
   void AddFeature(Feature feature, decimal userMarkup);
+  void AddWallTreatment(Part part, decimal userMarkup, float wallHeight, float wallWidth);
 }
 public class PriceReportPriceCalculationStrategy : IPriceCalculationStrategy, IDisposable
 {
@@ -35,6 +36,12 @@ public class PriceReportPriceCalculationStrategy : IPriceCalculationStrategy, ID
   {
     // write out required part(s) to the report file
     _streamWriter.WriteLine($"{feature.SKU},{feature.Height},{feature.Width},{feature.ColorName},{feature.ColorPerSquareFootCost},{feature.LinearFootCost},{feature.WholesalePrice},{feature.Quantity},{feature.WholesalePrice * feature.Quantity},{feature.ColorMarkup},{GlobalHelpers.Format(feature.MarkedUpCost)}");
+  }
+
+  public void AddWallTreatment(Part part, decimal userMarkup, float wallHeight, float wallWidth)
+  {
+    // write out required part(s) to the report file
+    _streamWriter.WriteLine($"{part.SKU},{wallHeight},{wallWidth},{part.ColorName},{part.ColorPerSquareFootCost} , {part.LinearFootCost},{part.Cost},{part.Quantity},{part.Cost * part.Quantity},{part.ColorMarkup},{GlobalHelpers.Format(part.MarkedUpCost)}");
   }
 
   public void Dispose()
@@ -66,6 +73,11 @@ public class OrderPriceCalculationStrategy(IOrderDataService orderDataService) :
   {
     orderDataService.AddOrderItem(_order, userMarkup, feature);
   }
+
+  public void AddWallTreatment(Part part, decimal userMarkup, float wallHeight, float wallWidth)
+  {
+    orderDataService.AddWallTreatmentToOrder(_order, part, userMarkup);
+  }
 }
 public class DefaultPriceCalculationStrategy : IPriceCalculationStrategy
 {
@@ -80,6 +92,11 @@ public class DefaultPriceCalculationStrategy : IPriceCalculationStrategy
   }
 
   public void AddFeature(Feature feature, decimal userMarkup)
+  {
+    // do nothing
+  }
+
+  public void AddWallTreatment(Part part, decimal userMarkup, float wallHeight, float wallWidth)
   {
     // do nothing
   }
@@ -204,15 +221,7 @@ public class PricingService(IOrderDataService orderDataService) : IPricingServic
           subtotal.Flat += thisPart.Cost;
           subtotal.Plus += thisPart.MarkedUpCost * (1 + thisUserMarkup / 100);
 
-          if (priceRequest.refType == "Order")
-          {
-            orderDataService.AddWallTreatmentToOrder(order, thisPart, thisUserMarkup);
-          }
-          else if (priceRequest.refType == "PriceReport")
-          {
-            // write out required part(s) to the report file
-            sr.WriteLine($"{thisPart.SKU},{remainingWallHeight},{width},{thisPart.ColorName},{thisPart.ColorPerSquareFootCost} , {thisPart.LinearFootCost},{thisPart.Cost},{thisPart.Quantity},{thisPart.Cost * thisPart.Quantity},{thisPart.ColorMarkup},{GlobalHelpers.Format(thisPart.MarkedUpCost)}");
-          }
+          priceCalculationStrategy.AddWallTreatment(thisPart, thisUserMarkup, remainingWallHeight, width);
         }
       }
 
