@@ -7,10 +7,12 @@ namespace MegaPricer.Pages;
 public class GenerateFileModel : PageModel
 {
   private readonly ILogger<GenerateFileModel> _logger;
+  private readonly IPricingService _pricingService;
 
-  public GenerateFileModel(ILogger<GenerateFileModel> logger)
+  public GenerateFileModel(ILogger<GenerateFileModel> logger, IPricingService pricingService)
   {
     _logger = logger;
+    _pricingService = pricingService;
   }
 
   public void OnGet()
@@ -32,6 +34,6 @@ public class GenerateFileModel : PageModel
     }
 
     string userName = User.Identity.Name;
-    new PricingService().CalculatePrice(new PriceRequest(1, 1, userName, "PriceReport"));
+    _pricingService.CalculatePrice(new PriceRequest(1, 1, userName, "PriceReport"));
   }
 }

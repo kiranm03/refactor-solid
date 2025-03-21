@@ -1,4 +1,5 @@
 ﻿using MegaPricer.Data;
+using MegaPricer.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +17,9 @@ builder.Services.AddRazorPages(options =>
 {
   options.Conventions.AuthorizeFolder("/");
 });
+
+builder.Services.AddScoped<IOrderDataService, SqliteOrderDataService>();
+builder.Services.AddScoped<IPricingService, PricingService>();
 
 var app = builder.Build();
 
