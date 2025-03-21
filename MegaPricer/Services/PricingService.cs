@@ -8,6 +8,7 @@ namespace MegaPricer.Services;
 public interface IPriceCalculationStrategy
 {
   void Create(Kitchen kitchen);
+  void AddPart(Part part, decimal userMarkup);
 }
 public class PriceReportPriceCalculationStrategy : IPriceCalculationStrategy, IDisposable
 {
@@ -23,6 +24,12 @@ public class PriceReportPriceCalculationStrategy : IPriceCalculationStrategy, ID
     _streamWriter.WriteLine("Part Name,Part SKU,Height,Width,Depth,Color,Sq Ft $, Lin Ft $,Per Piece $,# Needed,Part Price,Add On %,Total Part Price");
   }
 
+  public void AddPart(Part part, decimal userMarkup)
+  {
+    // write out required part(s) to the report file
+    _streamWriter.WriteLine($"{part.SKU},{part.Height},{part.Width},{part.Depth},{part.ColorName},{part.ColorPerSquareFootCost},{part.LinearFootCost},{part.Cost},{part.Quantity},{part.Cost * part.Quantity},{part.ColorMarkup},{GlobalHelpers.Format(part.MarkedUpCost)}");
+  }
+
   public void Dispose()
   {
     if(_streamWriter != null)
@@ -34,16 +41,28 @@ public class PriceReportPriceCalculationStrategy : IPriceCalculationStrategy, ID
 }
 public class OrderPriceCalculationStrategy(IOrderDataService orderDataService) : IPriceCalculationStrategy
 {
+  private Order _order = new();
   public void Create(Kitchen kitchen)
   {
     // create a new order
-    var order = new Order { KitchenId = kitchen.KitchenId };
-    orderDataService.CreateNewOrder(order);
+    _order.KitchenId = kitchen.KitchenId;
+    orderDataService.CreateNewOrder(_order);
+  }
+
+  public void AddPart(Part part, decimal userMarkup)
+  {
+    // add this part to the order
+    orderDataService.InsertOrderItemRecord(_order, part, userMarkup, part.MarkedUpCost);
   }
 }
 public class DefaultPriceCalculationStrategy : IPriceCalculationStrategy
 {
   public void Create(Kitchen kitchen)
+  {
+    // do nothing
+  }
+
+  public void AddPart(Part part, decimal userMarkup)
   {
     // do nothing
   }
@@ -128,21 +147,8 @@ public class PricingService(IOrderDataService orderDataService) : IPricingServic
           thisUserMarkup = GetUserMarkup(priceRequest, thisUserMarkup);
           subtotal.Plus += thisPart.MarkedUpCost * (1 + thisUserMarkup / 100);
         }
-
-        if (priceRequest.refType == "Order")
-        {
-          // add this part to the order
-          orderDataService.InsertOrderItemRecord(order, thisPart, thisUserMarkup, thisPart.MarkedUpCost);
-        }
-        else if (priceRequest.refType == "PriceReport")
-        {
-          // write out required part(s) to the report file
-          sr.WriteLine($"{thisPart.SKU},{thisPart.Height},{thisPart.Width},{thisPart.Depth},{thisPart.ColorName},{thisPart.ColorPerSquareFootCost},{thisPart.LinearFootCost},{thisPart.Cost},{thisPart.Quantity},{thisPart.Cost * thisPart.Quantity},{thisPart.ColorMarkup},{GlobalHelpers.Format(thisPart.MarkedUpCost)}");
-        }
-        else
-        {
-          // Just get the cost
-        }
+        
+        priceCalculationStrategy.AddPart(thisPart, thisUserMarkup);
 
         dt3 = LoadFeatures(cabinetId);
         foreach (DataRow featureRow in dt3.Rows)
